@@ -61,6 +61,11 @@
             <version>8.0.20</version>
             <scope>compile</scope>
         </dependency>
+        <dependency>
+            <groupId>com.aliyun</groupId>
+            <artifactId>aliyun-java-sdk-core</artifactId>
+            <version>4.5.0</version>
+        </dependency>
     </dependencies>
 
     <dependencyManagement>
