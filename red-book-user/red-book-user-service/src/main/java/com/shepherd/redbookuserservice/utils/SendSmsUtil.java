@@ -7,6 +7,9 @@ import com.aliyuncs.exceptions.ClientException;
 import com.aliyuncs.exceptions.ServerException;
 import com.aliyuncs.http.MethodType;
 import com.aliyuncs.profile.DefaultProfile;
+import org.apache.commons.lang.RandomStringUtils;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 /**
  * @author fjzheng
@@ -15,20 +18,34 @@ import com.aliyuncs.profile.DefaultProfile;
  */
 
 public class SendSmsUtil {
-    public static void main(String[] args) {
-        DefaultProfile profile = DefaultProfile.getProfile("cn-hangzhou", "<accessKeyId>", "<accessSecret>");
+    @Value("${aliyun-sms.accessKeyId}")
+    private static String accessKeyId;
+
+    @Value("${aliyun-sms.accessSecret}")
+    private static String accessSecret;
+
+    @Value("${aliyun-sms.signName}")
+    private static String signName;
+
+    @Value("${aliyun-sms.templateCode}")
+    private static String templateCode;
+
+    public static void sendSms(String phoneNumber){
+        String code =  RandomStringUtils.randomNumeric(6);
+        DefaultProfile profile = DefaultProfile.getProfile("cn-hangzhou", accessKeyId, accessSecret);
         IAcsClient client = new DefaultAcsClient(profile);
 
         CommonRequest request = new CommonRequest();
+        CommonRequest request1 = new CommonRequest();
         request.setSysMethod(MethodType.POST);
         request.setSysDomain("dysmsapi.aliyuncs.com");
         request.setSysVersion("2017-05-25");
         request.setSysAction("SendSms");
         request.putQueryParameter("RegionId", "cn-hangzhou");
-        request.putQueryParameter("PhoneNumbers", "17816875939");
-        request.putQueryParameter("SignName", "shepherd");
-        request.putQueryParameter("TemplateCode", "SMS_193518103");
-        request.putQueryParameter("TemplateParam", "{\"code\":\"655478\"}");
+        request.putQueryParameter("SignName", signName);
+        request.putQueryParameter("TemplateCode", templateCode);
+        request.putQueryParameter("PhoneNumbers", phoneNumber);
+        request.putQueryParameter("TemplateParam", "{code:"+ code +"}");
         try {
             CommonResponse response = client.getCommonResponse(request);
             System.out.println(response.getData());
@@ -38,4 +55,6 @@ public class SendSmsUtil {
             e.printStackTrace();
         }
     }
+
+
 }
