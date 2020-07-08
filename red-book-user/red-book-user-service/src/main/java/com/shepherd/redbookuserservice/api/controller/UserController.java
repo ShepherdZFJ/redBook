@@ -1,11 +1,9 @@
 package com.shepherd.redbookuserservice.api.controller;
 
 import com.shepherd.redbookuserservice.api.service.UserService;
+import com.shepherd.redbookuserservice.api.vo.UserVO;
 import io.swagger.annotations.ApiOperation;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
 
@@ -25,4 +23,13 @@ public class UserController {
     public void getCode(@PathVariable("phoneNumber") String phoneNumber){
         userService.getCode(phoneNumber);
     }
+
+    @GetMapping("/login")
+    @ApiOperation("用户登录")
+    public void login(@RequestBody UserVO userVO){
+
+
+
+    }
+
 }

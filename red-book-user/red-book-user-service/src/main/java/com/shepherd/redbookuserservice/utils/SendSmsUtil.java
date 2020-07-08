@@ -31,7 +31,7 @@ public class SendSmsUtil {
     private static String templateCode;
 
     public static void sendSms(String phoneNumber){
-        String code =  RandomStringUtils.randomNumeric(6);
+        String code1 =  RandomStringUtils.randomNumeric(6);
         DefaultProfile profile = DefaultProfile.getProfile("cn-hangzhou", accessKeyId, accessSecret);
         IAcsClient client = new DefaultAcsClient(profile);
 
@@ -45,7 +45,7 @@ public class SendSmsUtil {
         request.putQueryParameter("SignName", signName);
         request.putQueryParameter("TemplateCode", templateCode);
         request.putQueryParameter("PhoneNumbers", phoneNumber);
-        request.putQueryParameter("TemplateParam", "{code:"+ code +"}");
+        request.putQueryParameter("TemplateParam", "{code:"+ code1 +"}");
         try {
             CommonResponse response = client.getCommonResponse(request);
             System.out.println(response.getData());

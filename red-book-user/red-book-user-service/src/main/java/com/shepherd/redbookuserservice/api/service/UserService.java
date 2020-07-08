@@ -1,5 +1,7 @@
 package com.shepherd.redbookuserservice.api.service;
 
+import com.shepherd.redbookuserservice.dto.UserDTO;
+
 /**
  * @author fjZheng
  * @version 1.0
@@ -7,4 +9,5 @@ package com.shepherd.redbookuserservice.api.service;
  */
 public interface UserService {
     void getCode(String phoneNumber);
+    void login(UserDTO userDTO);
 }

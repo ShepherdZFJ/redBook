@@ -10,6 +10,7 @@ import com.aliyuncs.http.MethodType;
 import com.aliyuncs.profile.DefaultProfile;
 import com.shepherd.redbookuserservice.api.service.UserService;
 import com.shepherd.redbookuserservice.constant.ErrorCodeEnum;
+import com.shepherd.redbookuserservice.dto.UserDTO;
 import com.shepherd.redbookuserservice.exception.BusinessException;
 import com.shepherd.redbookuserservice.utils.SendSmsUtil;
 import lombok.extern.slf4j.Slf4j;
@@ -65,4 +66,18 @@ public class UserServiceImpl implements UserService {
             log.error("send message error: ", e);
         }
     }
+
+    @Override
+    public void login(UserDTO userDTO) {
+
+    }
+
+    private void localLogin(UserDTO userDTO){
+
+    }
+
+    private void phoneLogin(UserDTO userDTO){
+
+    }
+
 }
