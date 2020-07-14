@@ -30,5 +30,7 @@ public class UserVO {
     private Date updateTime;
     private String VerificationCode;
     private Integer type;
+    private Integer firstLogin;
+    private Integer count;
 }
 
