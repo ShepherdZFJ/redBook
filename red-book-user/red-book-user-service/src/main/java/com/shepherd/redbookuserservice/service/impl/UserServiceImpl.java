@@ -7,23 +7,24 @@ import com.aliyuncs.DefaultAcsClient;
 import com.aliyuncs.IAcsClient;
 import com.aliyuncs.exceptions.ClientException;
 import com.aliyuncs.exceptions.ServerException;
-import com.aliyuncs.http.HttpRequest;
 import com.aliyuncs.http.MethodType;
 import com.aliyuncs.profile.DefaultProfile;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.shepherd.redbookuserservice.api.service.UserService;
+import com.shepherd.redbookuserservice.config.CasProperties;
 import com.shepherd.redbookuserservice.constant.CommonConstant;
 import com.shepherd.redbookuserservice.constant.ErrorCodeEnum;
 import com.shepherd.redbookuserservice.dao.UserDAO;
 import com.shepherd.redbookuserservice.dto.UserDTO;
 import com.shepherd.redbookuserservice.entity.User;
 import com.shepherd.redbookuserservice.exception.BusinessException;
-import com.shepherd.redbookuserservice.utils.SendSmsUtil;
+import com.shepherd.redbookuserservice.utils.CookieBaseSessionUtils;
 import com.shepherd.redbookuserservice.utils.UserBeanUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.RandomStringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,6 +32,7 @@ import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.util.Date;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -47,7 +49,10 @@ public class UserServiceImpl implements UserService {
     private UserDAO userDAO;
 
     @Resource
-    private RedisTemplate redisTemplate;
+    private CookieBaseSessionUtils cookBaseSessionUtils;
+
+    @Resource
+    private StringRedisTemplate stringRedisTemplate;
 
     @Value("${aliyun-sms.accessKeyId}")
     private  String accessKeyId;
@@ -91,7 +96,10 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void login(UserDTO userDTO) {
+    public void login(UserDTO userDTO, HttpServletRequest request, HttpServletResponse response) {
+        if (Objects.equals(userDTO.getType(), CommonConstant.PHONE_LOCAL_LOGIN)) {
+            loginByLocal(userDTO, request, response );
+        }
 
     }
 
@@ -104,9 +112,12 @@ public class UserServiceImpl implements UserService {
             int insert = userDAO.insert(UserBeanUtils.copy(userDTO, User.class));
             String ticket = UUID.randomUUID().toString();
             String token = UUID.randomUUID().toString();
-            redisTemplate.opsForValue().set(ticket, token, 20, TimeUnit.SECONDS);
-            redisTemplate.opsForValue().set(token, JSON.toJSONString(userDTO),2,TimeUnit.HOURS);
+            stringRedisTemplate.opsForValue().set(ticket, token, 20, TimeUnit.SECONDS);
+            stringRedisTemplate.opsForValue().set(token, JSON.toJSONString(userDTO),2,TimeUnit.HOURS);
             //种植cookie
+            CasProperties casProperties = cookBaseSessionUtils.getCasProperties();
+            request.setAttribute(cookBaseSessionUtils.getCasProperties().getCookieName(), token);
+            cookBaseSessionUtils.onNewSession(request, response);
 
         }
 

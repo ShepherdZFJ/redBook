@@ -2,10 +2,15 @@ package com.shepherd.redbookuserservice.api.controller;
 
 import com.shepherd.redbookuserservice.api.service.UserService;
 import com.shepherd.redbookuserservice.api.vo.UserVO;
+import com.shepherd.redbookuserservice.dto.UserDTO;
+import com.shepherd.redbookuserservice.utils.UserBeanUtils;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.web.bind.annotation.*;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 /**
  * @author fjZheng
@@ -24,10 +29,11 @@ public class UserController {
         userService.getCode(phoneNumber);
     }
 
-    @GetMapping("/login")
+    @PostMapping("/login")
     @ApiOperation("用户登录")
-    public void login(@RequestBody UserVO userVO){
-
+    public void login(@RequestBody UserVO userVO, HttpServletRequest request, HttpServletResponse response){
+        UserDTO userDTO = UserBeanUtils.copy(userVO, UserDTO.class);
+        userService.login(userDTO, request, response);
 
 
     }

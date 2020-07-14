@@ -1,5 +1,9 @@
 package com.shepherd.redbookuserservice.utils;
 
+import com.shepherd.redbookuserservice.config.CasProperties;
+import lombok.Data;
+import org.springframework.stereotype.Component;
+
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -9,10 +13,17 @@ import javax.servlet.http.HttpServletResponse;
  * @version 1.0
  * @date 2020/7/14 19:23
  */
-public class CookBaseSessionUtils {
 
-    //cookie名称
-    private String cookieName = "red-book-permission-shepherd";
+public class CookieBaseSessionUtils {
+
+    private CasProperties casProperties;
+
+    public CasProperties getCasProperties() {
+        return casProperties;
+    }
+    public void setCasProperties(CasProperties casProperties) {
+        this.casProperties = casProperties;
+    }
 
     public String getRequestedSessionId(HttpServletRequest request) {
         Cookie[] cookies = request.getCookies();
@@ -23,7 +34,8 @@ public class CookBaseSessionUtils {
             if (cookie == null) {
                 continue;
             }
-            if (! cookieName.equalsIgnoreCase(cookie.getName())) {
+
+            if (!casProperties.getCookieName().equalsIgnoreCase(cookie.getName())) {
                 continue;
             }
 
@@ -34,8 +46,8 @@ public class CookBaseSessionUtils {
 
     public void onNewSession(HttpServletRequest request,
                              HttpServletResponse response) {
-        String sessionId = (String) request.getAttribute(cookieName);
-        Cookie cookie = new Cookie(cookieName, sessionId);
+        String sessionId = (String) request.getAttribute(casProperties.getCookieName());
+        Cookie cookie = new Cookie(casProperties.getCookieName(), sessionId);
 //        cookie.setDomain(request.getRemoteHost());
         cookie.setHttpOnly(true);
         cookie.setPath(request.getContextPath() + "/");
