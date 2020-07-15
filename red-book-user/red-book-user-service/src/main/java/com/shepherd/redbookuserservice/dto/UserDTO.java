@@ -32,4 +32,6 @@ public class UserDTO {
     private Integer type;
     private Integer firstLogin;
     private Integer count;
+    private String ticket;
+    private String token;
 }

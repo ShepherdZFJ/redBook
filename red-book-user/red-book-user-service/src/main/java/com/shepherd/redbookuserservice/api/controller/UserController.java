@@ -1,6 +1,8 @@
 package com.shepherd.redbookuserservice.api.controller;
 
+import com.alibaba.fastjson.JSONObject;
 import com.shepherd.redbookuserservice.api.service.UserService;
+import com.shepherd.redbookuserservice.api.vo.LoginVO;
 import com.shepherd.redbookuserservice.api.vo.UserVO;
 import com.shepherd.redbookuserservice.dto.UserDTO;
 import com.shepherd.redbookuserservice.utils.UserBeanUtils;
@@ -18,7 +20,7 @@ import javax.servlet.http.HttpServletResponse;
  * @date 2020/6/16 19:45
  */
 @RestController
-@RequestMapping("/api/sso/auth")
+@RequestMapping("/api/auth/user")
 public class UserController {
     @Resource
     private UserService userService;
@@ -29,13 +31,26 @@ public class UserController {
         userService.getCode(phoneNumber);
     }
 
+    public UserVO status(HttpServletRequest request, HttpServletResponse response) {
+        UserDTO userDTO = userService.status(request, response);
+        return UserBeanUtils.copy(userDTO, UserVO.class);
+
+    }
+
+
     @PostMapping("/login")
     @ApiOperation("用户登录")
-    public void login(@RequestBody UserVO userVO, HttpServletRequest request, HttpServletResponse response){
+    public LoginVO login(@RequestBody UserVO userVO, HttpServletRequest request, HttpServletResponse response){
         UserDTO userDTO = UserBeanUtils.copy(userVO, UserDTO.class);
-        userService.login(userDTO, request, response);
+        UserDTO userDTO1 = userService.login(userDTO, request, response);
+        return UserBeanUtils.copy(userDTO1, LoginVO.class);
+    }
 
-
+    @PutMapping
+    @ApiOperation("修改用户信息")
+    public void updateUserInfo(@RequestBody UserVO userVO) {
+        UserDTO userDTO = UserBeanUtils.copy(userVO, UserDTO.class);
+        userService.update(userDTO);
     }
 
 }

@@ -32,5 +32,7 @@ public class UserVO {
     private Integer type;
     private Integer firstLogin;
     private Integer count;
+    private String ticket;
+    private String token;
 }
 

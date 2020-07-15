@@ -1,6 +1,7 @@
 package com.shepherd.redbookuserservice.service.impl;
 
 import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONObject;
 import com.aliyuncs.CommonRequest;
 import com.aliyuncs.CommonResponse;
 import com.aliyuncs.DefaultAcsClient;
@@ -10,6 +11,7 @@ import com.aliyuncs.exceptions.ServerException;
 import com.aliyuncs.http.MethodType;
 import com.aliyuncs.profile.DefaultProfile;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.rabbitmq.tools.json.JSONUtil;
 import com.shepherd.redbookuserservice.api.service.UserService;
 import com.shepherd.redbookuserservice.config.CasProperties;
 import com.shepherd.redbookuserservice.constant.CommonConstant;
@@ -22,19 +24,26 @@ import com.shepherd.redbookuserservice.utils.CookieBaseSessionUtils;
 import com.shepherd.redbookuserservice.utils.UserBeanUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.RandomStringUtils;
+import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+
 import javax.annotation.Resource;
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.util.Date;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import cn.hutool.http.HttpStatus;
+
+
 
 /**
  * @author fjZheng
@@ -44,6 +53,10 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @Service
 public class UserServiceImpl implements UserService {
+
+    public static final String TICKET = "ticket";
+
+    public static final String TOKEN = "token";
 
     @Resource
     private UserDAO userDAO;
@@ -96,31 +109,76 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public void login(UserDTO userDTO, HttpServletRequest request, HttpServletResponse response) {
+    public UserDTO login(UserDTO userDTO, HttpServletRequest request, HttpServletResponse response) {
         if (Objects.equals(userDTO.getType(), CommonConstant.PHONE_LOCAL_LOGIN)) {
-            loginByLocal(userDTO, request, response );
+            return loginByLocal(userDTO, request, response );
         }
+        return null;
+
+    }
+
+    @Override
+    public UserDTO update(UserDTO userDTO) {
+        User user = UserBeanUtils.copy(userDTO, User.class);
+        int i = userDAO.updateById(user);
+        return UserBeanUtils.copy(user, UserDTO.class);
+    }
+
+    @Override
+    public UserDTO status(HttpServletRequest request, HttpServletResponse response) {
+        String ticket = getTokenOrTicket(request, TICKET);
+        String token = getTokenOrTicket(request, TOKEN);
+        if ( (StringUtils.isBlank(ticket) && StringUtils.isBlank(token))) {
+            log.info("ticket和token都为空，未登录的操作");
+            response.setStatus(HttpStatus.HTTP_UNAUTHORIZED);
+            return null;
+        }
+        if (StringUtils.isNotBlank(ticket)) {
+            String value = stringRedisTemplate.opsForValue().get(ticket);
+            if (StringUtils.isNotBlank(value)) {
+                token = value;
+            }
+        }
+        String userInfo = stringRedisTemplate.opsForValue().get(token);
+        if (StringUtils.isBlank(userInfo)) {
+            response.setStatus(HttpStatus.HTTP_UNAUTHORIZED);
+            return null;
+        }
+        UserDTO userDTO = JSONObject.parseObject(userInfo, UserDTO.class);
+        stringRedisTemplate.expire(token , 2, TimeUnit.HOURS);
+        return userDTO;
+
 
     }
 
 
-    private void loginByLocal(UserDTO userDTO, HttpServletRequest request, HttpServletResponse response){
+    private UserDTO loginByLocal(UserDTO userDTO, HttpServletRequest request, HttpServletResponse response){
+        //判断手机号是否登录过
         UserDTO userDTO1 = findUserByPhoneNumber(userDTO.getPhone());
         if (userDTO1 == null) {
             userDTO.setCount(1);
             userDTO.setLastLoginTime(new Date());
             int insert = userDAO.insert(UserBeanUtils.copy(userDTO, User.class));
-            String ticket = UUID.randomUUID().toString();
-            String token = UUID.randomUUID().toString();
-            stringRedisTemplate.opsForValue().set(ticket, token, 20, TimeUnit.SECONDS);
-            stringRedisTemplate.opsForValue().set(token, JSON.toJSONString(userDTO),2,TimeUnit.HOURS);
-            //种植cookie
-            CasProperties casProperties = cookBaseSessionUtils.getCasProperties();
-            request.setAttribute(cookBaseSessionUtils.getCasProperties().getCookieName(), token);
-            cookBaseSessionUtils.onNewSession(request, response);
+            userDTO.setFirstLogin(CommonConstant.FIRST_LOGIN);
 
+        } else {
+            userDTO1.setCount(userDTO1.getCount()+1);
+            userDTO1.setLastLoginTime(new Date());
+            userDAO.updateById(UserBeanUtils.copy(userDTO1, User.class));
+            userDTO = userDTO1;
+            userDTO.setFirstLogin(CommonConstant.NOT_FIRST_LOGIN);
         }
-
+        String ticket = UUID.randomUUID().toString();
+        String token = UUID.randomUUID().toString();
+        stringRedisTemplate.opsForValue().set(ticket, token, 20, TimeUnit.SECONDS);
+        stringRedisTemplate.opsForValue().set(token, JSON.toJSONString(userDTO),2,TimeUnit.HOURS);
+        //种植cookie
+        CasProperties casProperties = cookBaseSessionUtils.getCasProperties();
+        request.setAttribute(cookBaseSessionUtils.getCasProperties().getCookieName(), token);
+        cookBaseSessionUtils.onNewSession(request, response);
+        userDTO.setTicket(ticket);
+        userDTO.setToken(token);
+        return userDTO;
 
     }
 
@@ -129,6 +187,33 @@ public class UserServiceImpl implements UserService {
     }
 
     private void loginByUserAndPassword(UserDTO userDTO){
+
+    }
+
+    private String getTokenOrTicket(HttpServletRequest request,String key) {
+        String token = request.getHeader(key);
+        if (!(StringUtils.isNotBlank(token))) {
+            token =  request.getParameter(key);
+        }
+        if (!StringUtils.isNotBlank(token)) {
+            token = request.getHeader(cookBaseSessionUtils.getCasProperties().getCookieName());
+        }
+        if ("token".equals(key) && !StringUtils.isNotBlank(token)) {
+            if (null != request.getCookies() && request.getCookies().length > 0) {
+                for (Cookie cookie : request.getCookies()) {
+                    if (cookBaseSessionUtils.getCasProperties().getCookieName().equals(cookie.getName())) {
+                        token = cookie.getValue();
+                        break;
+                    }
+                }
+            }
+        }
+        if (StringUtils.isEmpty(token)) {
+            Map<String, String[]> parameterMap = request.getParameterMap();
+            String[] tokens = parameterMap.get(key);
+            token = tokens == null || tokens.length == 0 ? null : tokens[0];
+        }
+        return token;
 
     }
 

@@ -1,5 +1,6 @@
 package com.shepherd.redbookuserservice.api.service;
 
+import com.alibaba.fastjson.JSONObject;
 import com.shepherd.redbookuserservice.dto.UserDTO;
 
 import javax.servlet.http.HttpServletRequest;
@@ -13,5 +14,10 @@ import javax.servlet.http.HttpServletResponse;
 public interface UserService {
     void getCode(String phoneNumber);
 
-    void login(UserDTO userDTO, HttpServletRequest request, HttpServletResponse response);
+    UserDTO login(UserDTO userDTO, HttpServletRequest request, HttpServletResponse response);
+
+    UserDTO update(UserDTO userDTO);
+
+    UserDTO status(HttpServletRequest request, HttpServletResponse response);
+
 }
