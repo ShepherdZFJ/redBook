@@ -5,6 +5,7 @@ import com.shepherd.redbookuserservice.dto.UserDTO;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.util.List;
 
 /**
  * @author fjZheng
@@ -19,5 +20,7 @@ public interface UserService {
     UserDTO update(UserDTO userDTO);
 
     UserDTO status(HttpServletRequest request, HttpServletResponse response);
+
+    List<UserDTO> getList();
 
 }

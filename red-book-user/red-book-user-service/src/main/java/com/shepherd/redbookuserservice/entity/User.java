@@ -46,7 +46,7 @@ public class User implements Serializable {
     private Date birthday;
 
     @ApiModelProperty("删除标志位")
-    private Integer is_delete;
+    private Integer isDelete;
 
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     @ApiModelProperty("最近一次登录时间")

@@ -21,7 +21,7 @@ public class UserVO {
     private String headPhoto;
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date birthday;
-    private Integer is_delete;
+    private Integer isDelete;
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date lastLoginTime;
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")

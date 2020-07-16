@@ -36,13 +36,12 @@ import javax.annotation.Resource;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.util.Date;
-import java.util.Map;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
-import cn.hutool.http.HttpStatus;
+import java.util.stream.Collectors;
 
+import cn.hutool.http.HttpStatus;
+import org.springframework.util.CollectionUtils;
 
 
 /**
@@ -128,7 +127,7 @@ public class UserServiceImpl implements UserService {
     public UserDTO status(HttpServletRequest request, HttpServletResponse response) {
         String ticket = getTokenOrTicket(request, TICKET);
         String token = getTokenOrTicket(request, TOKEN);
-        if ( (StringUtils.isBlank(ticket) && StringUtils.isBlank(token))) {
+        if ( StringUtils.isBlank(ticket) && StringUtils.isBlank(token)) {
             log.info("ticket和token都为空，未登录的操作");
             response.setStatus(HttpStatus.HTTP_UNAUTHORIZED);
             return null;
@@ -151,6 +150,15 @@ public class UserServiceImpl implements UserService {
 
     }
 
+    @Override
+    public List<UserDTO> getList() {
+        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("is_delete", CommonConstant.NOT_DEL);
+        List<User> users = userDAO.selectList(queryWrapper);
+        List<UserDTO> userDTOS = users.stream().map(user -> toUserDTO(user)).collect(Collectors.toList());
+        return userDTOS;
+    }
+
 
     private UserDTO loginByLocal(UserDTO userDTO, HttpServletRequest request, HttpServletResponse response){
         //判断手机号是否登录过
@@ -158,19 +166,21 @@ public class UserServiceImpl implements UserService {
         if (userDTO1 == null) {
             userDTO.setCount(1);
             userDTO.setLastLoginTime(new Date());
-            int insert = userDAO.insert(UserBeanUtils.copy(userDTO, User.class));
+            userDTO.setIsDelete(CommonConstant.NOT_DEL);
+            int insert = userDAO.insert(userDTO);
             userDTO.setFirstLogin(CommonConstant.FIRST_LOGIN);
 
         } else {
             userDTO1.setCount(userDTO1.getCount()+1);
             userDTO1.setLastLoginTime(new Date());
-            userDAO.updateById(UserBeanUtils.copy(userDTO1, User.class));
+            userDTO1.setUpdateTime(new Date());
+            userDAO.updateById(userDTO1);
             userDTO = userDTO1;
             userDTO.setFirstLogin(CommonConstant.NOT_FIRST_LOGIN);
         }
         String ticket = UUID.randomUUID().toString();
         String token = UUID.randomUUID().toString();
-        stringRedisTemplate.opsForValue().set(ticket, token, 20, TimeUnit.SECONDS);
+        stringRedisTemplate.opsForValue().set(ticket, token, 20, TimeUnit.MINUTES);
         stringRedisTemplate.opsForValue().set(token, JSON.toJSONString(userDTO),2,TimeUnit.HOURS);
         //种植cookie
         CasProperties casProperties = cookBaseSessionUtils.getCasProperties();
@@ -192,14 +202,14 @@ public class UserServiceImpl implements UserService {
 
     private String getTokenOrTicket(HttpServletRequest request,String key) {
         String token = request.getHeader(key);
-        if (!(StringUtils.isNotBlank(token))) {
+        if (StringUtils.isBlank(token)) {
             token =  request.getParameter(key);
         }
-        if (!StringUtils.isNotBlank(token)) {
+        if (StringUtils.isBlank(token)) {
             token = request.getHeader(cookBaseSessionUtils.getCasProperties().getCookieName());
         }
-        if ("token".equals(key) && !StringUtils.isNotBlank(token)) {
-            if (null != request.getCookies() && request.getCookies().length > 0) {
+        if ("token".equals(key) && StringUtils.isBlank(token)) {
+            if (!CollectionUtils.isEmpty(Arrays.asList(request.getCookies()))) {
                 for (Cookie cookie : request.getCookies()) {
                     if (cookBaseSessionUtils.getCasProperties().getCookieName().equals(cookie.getName())) {
                         token = cookie.getValue();
@@ -208,7 +218,7 @@ public class UserServiceImpl implements UserService {
                 }
             }
         }
-        if (StringUtils.isEmpty(token)) {
+        if (StringUtils.isBlank(token)) {
             Map<String, String[]> parameterMap = request.getParameterMap();
             String[] tokens = parameterMap.get(key);
             token = tokens == null || tokens.length == 0 ? null : tokens[0];
@@ -228,6 +238,19 @@ public class UserServiceImpl implements UserService {
             return userDTO;
         }
         return null;
+    }
+
+    private UserDTO toUserDTO(User user) {
+        if (user == null) {
+            return null;
+        }
+        UserDTO userDTO = UserBeanUtils.copy(user, UserDTO.class);
+        if (userDTO.getCount() > 1) {
+            userDTO.setFirstLogin(CommonConstant.NOT_FIRST_LOGIN);
+        } else {
+            userDTO.setFirstLogin(CommonConstant.FIRST_LOGIN);
+        }
+        return userDTO;
     }
 
 }

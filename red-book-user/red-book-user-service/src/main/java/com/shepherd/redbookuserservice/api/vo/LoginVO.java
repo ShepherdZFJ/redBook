@@ -22,7 +22,7 @@ public class LoginVO {
     @ApiModelProperty("token，有效时间2H")
     private String token;
 
-    private String type;
+    private Integer type;
 
     @ApiModelProperty("用户名")
     private String userName;

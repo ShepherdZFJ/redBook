@@ -13,6 +13,7 @@ import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.util.List;
 
 /**
  * @author fjZheng
@@ -31,6 +32,8 @@ public class UserController {
         userService.getCode(phoneNumber);
     }
 
+    @GetMapping("/status")
+    @ApiOperation("查看登录状态")
     public UserVO status(HttpServletRequest request, HttpServletResponse response) {
         UserDTO userDTO = userService.status(request, response);
         return UserBeanUtils.copy(userDTO, UserVO.class);
@@ -51,6 +54,13 @@ public class UserController {
     public void updateUserInfo(@RequestBody UserVO userVO) {
         UserDTO userDTO = UserBeanUtils.copy(userVO, UserDTO.class);
         userService.update(userDTO);
+    }
+
+    @GetMapping
+    @ApiOperation("获取用户列表")
+    public List<UserDTO> getList(){
+        return userService.getList();
+
     }
 
 }
