@@ -60,6 +60,9 @@ public class UserController {
     @ApiOperation("获取用户列表")
     public List<UserDTO> getList(){
         return userService.getList();
+    }
+
+    public void logout(HttpServletRequest request, HttpServletResponse response) {
 
     }
 

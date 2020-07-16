@@ -28,7 +28,7 @@ public class UserVO {
     private Date createTime;
     @DateTimeFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private Date updateTime;
-    private String VerificationCode;
+    private String code;
     private Integer type;
     private Integer firstLogin;
     private Integer count;

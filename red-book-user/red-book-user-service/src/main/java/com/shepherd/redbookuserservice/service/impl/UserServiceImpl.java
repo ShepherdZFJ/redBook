@@ -53,15 +53,16 @@ import org.springframework.util.CollectionUtils;
 @Service
 public class UserServiceImpl implements UserService {
 
-    public static final String TICKET = "ticket";
+    private static final String TICKET = "ticket";
 
-    public static final String TOKEN = "token";
+    private static final String TOKEN = "token";
+    private static final String VERIFICATION = "red-book-code-";
 
     @Resource
     private UserDAO userDAO;
 
     @Resource
-    private CookieBaseSessionUtils cookBaseSessionUtils;
+    private CookieBaseSessionUtils cookieBaseSessionUtils;
 
     @Resource
     private StringRedisTemplate stringRedisTemplate;
@@ -77,8 +78,10 @@ public class UserServiceImpl implements UserService {
 
     @Value("${aliyun-sms.templateCode}")
     private  String templateCode;
+    @Value("${aliyun-sms.expireTime}")
+    private Long expireTime;
     @Override
-    public void getCode(String phoneNumber) {
+    public String getCode(String phoneNumber) {
         String code = RandomStringUtils.randomNumeric(6);
         DefaultProfile profile = DefaultProfile.getProfile("cn-hangzhou", accessKeyId, accessSecret);
         IAcsClient client = new DefaultAcsClient(profile);
@@ -97,12 +100,15 @@ public class UserServiceImpl implements UserService {
         try {
             CommonResponse response = client.getCommonResponse(request);
             log.info("send message result: "+response.getData());
+            stringRedisTemplate.opsForValue().set(VERIFICATION+phoneNumber, code, expireTime, TimeUnit.MINUTES);
+            return code;
 
         } catch (ServerException e) {
             log.error("send message error: ", e);
             throw new BusinessException(ErrorCodeEnum.SEND_MESSAGE_ERROR.getCode(), ErrorCodeEnum.SEND_MESSAGE_ERROR.getMessage());
         } catch (ClientException e) {
             log.error("send message error: ", e);
+            throw new BusinessException(ErrorCodeEnum.SEND_MESSAGE_ERROR.getCode(), ErrorCodeEnum.SEND_MESSAGE_ERROR.getMessage());
         }
     }
 
@@ -111,6 +117,8 @@ public class UserServiceImpl implements UserService {
     public UserDTO login(UserDTO userDTO, HttpServletRequest request, HttpServletResponse response) {
         if (Objects.equals(userDTO.getType(), CommonConstant.PHONE_LOCAL_LOGIN)) {
             return loginByLocal(userDTO, request, response );
+        } else if (Objects.equals(userDTO.getType(), CommonConstant.PHONE_MESSAGE_LOGIN)) {
+            return loginByPhoneAndCode(userDTO, request, response);
         }
         return null;
 
@@ -159,6 +167,35 @@ public class UserServiceImpl implements UserService {
         return userDTOS;
     }
 
+    @Override
+    public void logout(HttpServletRequest request, HttpServletResponse response) {
+        String ticket = getTokenOrTicket(request, TICKET);
+        String token = getTokenOrTicket(request, TOKEN);
+        if (StringUtils.isNotBlank(ticket)) {
+            String value = stringRedisTemplate.opsForValue().get(ticket);
+            if (StringUtils.isNotBlank(value)) {
+                token = value;
+            }
+        }
+        String userInfo = stringRedisTemplate.opsForValue().get(token);
+        if (StringUtils.isNotBlank(userInfo)) {
+            log.info("删除token值为{}", token);
+            //在redis中删除token
+            stringRedisTemplate.delete(token);
+
+            //清除cookie
+            Cookie cookie = new Cookie(cookieBaseSessionUtils.getCasProperties().getCookieName(), null);
+            cookie.setHttpOnly(true);
+            cookie.setPath(request.getContextPath() + "/");
+            cookie.setMaxAge(0);
+            response.addCookie(cookie);
+
+
+        }
+
+
+    }
+
 
     private UserDTO loginByLocal(UserDTO userDTO, HttpServletRequest request, HttpServletResponse response){
         //判断手机号是否登录过
@@ -183,20 +220,27 @@ public class UserServiceImpl implements UserService {
         stringRedisTemplate.opsForValue().set(ticket, token, 20, TimeUnit.MINUTES);
         stringRedisTemplate.opsForValue().set(token, JSON.toJSONString(userDTO),2,TimeUnit.HOURS);
         //种植cookie
-        CasProperties casProperties = cookBaseSessionUtils.getCasProperties();
-        request.setAttribute(cookBaseSessionUtils.getCasProperties().getCookieName(), token);
-        cookBaseSessionUtils.onNewSession(request, response);
+        CasProperties casProperties = cookieBaseSessionUtils.getCasProperties();
+        request.setAttribute(cookieBaseSessionUtils.getCasProperties().getCookieName(), token);
+        cookieBaseSessionUtils.onNewSession(request, response);
         userDTO.setTicket(ticket);
         userDTO.setToken(token);
         return userDTO;
 
     }
 
-    private void loginByPhoneAndCode(UserDTO userDTO){
+    private UserDTO loginByPhoneAndCode(UserDTO userDTO, HttpServletRequest request, HttpServletResponse response){
+        Boolean flag = checkVerificationCode(userDTO.getPhone(), userDTO.getCode());
+        if (flag) {
+            UserDTO userDTO1 = loginByLocal(userDTO, request, response);
+            return userDTO1;
+        }else {
+            throw new BusinessException(ErrorCodeEnum.VERIFICATION_CODE_ERROR.getCode(), ErrorCodeEnum.VERIFICATION_CODE_ERROR.getMessage());
+        }
 
     }
 
-    private void loginByUserAndPassword(UserDTO userDTO){
+    private void loginByUserAndPassword(UserDTO userDTO, HttpServletRequest request, HttpServletResponse response){
 
     }
 
@@ -206,12 +250,12 @@ public class UserServiceImpl implements UserService {
             token =  request.getParameter(key);
         }
         if (StringUtils.isBlank(token)) {
-            token = request.getHeader(cookBaseSessionUtils.getCasProperties().getCookieName());
+            token = request.getHeader(cookieBaseSessionUtils.getCasProperties().getCookieName());
         }
         if ("token".equals(key) && StringUtils.isBlank(token)) {
             if (!CollectionUtils.isEmpty(Arrays.asList(request.getCookies()))) {
                 for (Cookie cookie : request.getCookies()) {
-                    if (cookBaseSessionUtils.getCasProperties().getCookieName().equals(cookie.getName())) {
+                    if (cookieBaseSessionUtils.getCasProperties().getCookieName().equals(cookie.getName())) {
                         token = cookie.getValue();
                         break;
                     }
@@ -251,6 +295,16 @@ public class UserServiceImpl implements UserService {
             userDTO.setFirstLogin(CommonConstant.FIRST_LOGIN);
         }
         return userDTO;
+    }
+
+    private Boolean checkVerificationCode(String phoneNumber, String code){
+        Boolean flag = false;
+        String value = stringRedisTemplate.opsForValue().get(VERIFICATION + phoneNumber);
+        if (Objects.equals(code, value)) {
+            flag = true;
+        }
+        return flag;
+
     }
 
 }

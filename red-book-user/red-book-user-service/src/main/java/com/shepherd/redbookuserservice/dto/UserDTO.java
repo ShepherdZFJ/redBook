@@ -13,7 +13,7 @@ import java.util.Date;
  */
 @Data
 public class UserDTO extends User {
-    private String VerificationCode;
+    private String code;
     private Integer type;
     private Integer firstLogin;
     private String ticket;

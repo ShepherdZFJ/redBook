@@ -13,7 +13,7 @@ import java.util.List;
  * @date 2020/6/16 19:47
  */
 public interface UserService {
-    void getCode(String phoneNumber);
+    String getCode(String phoneNumber);
 
     UserDTO login(UserDTO userDTO, HttpServletRequest request, HttpServletResponse response);
 
@@ -22,5 +22,7 @@ public interface UserService {
     UserDTO status(HttpServletRequest request, HttpServletResponse response);
 
     List<UserDTO> getList();
+
+    void logout(HttpServletRequest request, HttpServletResponse response);
 
 }
