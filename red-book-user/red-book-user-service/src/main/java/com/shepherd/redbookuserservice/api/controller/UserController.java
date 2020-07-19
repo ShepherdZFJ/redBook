@@ -40,7 +40,6 @@ public class UserController {
 
     }
 
-
     @PostMapping("/login")
     @ApiOperation("用户登录")
     public LoginVO login(@RequestBody UserVO userVO, HttpServletRequest request, HttpServletResponse response){
@@ -56,14 +55,18 @@ public class UserController {
         userService.update(userDTO);
     }
 
+    @ApiOperation("退出登陆")
+    @PutMapping("/logout")
+    public void logout(HttpServletRequest request, HttpServletResponse response) {
+        userService.logout(request, response);
+    }
+
     @GetMapping
     @ApiOperation("获取用户列表")
     public List<UserDTO> getList(){
         return userService.getList();
     }
 
-    public void logout(HttpServletRequest request, HttpServletResponse response) {
 
-    }
 
 }

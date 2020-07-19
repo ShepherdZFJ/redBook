@@ -17,7 +17,7 @@ public interface UserService {
 
     UserDTO login(UserDTO userDTO, HttpServletRequest request, HttpServletResponse response);
 
-    UserDTO update(UserDTO userDTO);
+    void update(UserDTO userDTO);
 
     UserDTO status(HttpServletRequest request, HttpServletResponse response);
 

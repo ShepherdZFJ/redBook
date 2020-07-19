@@ -63,6 +63,9 @@ public class User implements Serializable {
     @ApiModelProperty("登录次数")
     private Integer count;
 
+    @ApiModelProperty("盐，用于加密")
+    private String salt;
+
 
 
 }

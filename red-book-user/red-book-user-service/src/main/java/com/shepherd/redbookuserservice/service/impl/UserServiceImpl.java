@@ -1,5 +1,6 @@
 package com.shepherd.redbookuserservice.service.impl;
 
+import cn.hutool.core.util.IdUtil;
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONObject;
 import com.aliyuncs.CommonRequest;
@@ -21,6 +22,7 @@ import com.shepherd.redbookuserservice.dto.UserDTO;
 import com.shepherd.redbookuserservice.entity.User;
 import com.shepherd.redbookuserservice.exception.BusinessException;
 import com.shepherd.redbookuserservice.utils.CookieBaseSessionUtils;
+import com.shepherd.redbookuserservice.utils.MD5Utils;
 import com.shepherd.redbookuserservice.utils.UserBeanUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang.RandomStringUtils;
@@ -120,15 +122,22 @@ public class UserServiceImpl implements UserService {
         } else if (Objects.equals(userDTO.getType(), CommonConstant.PHONE_MESSAGE_LOGIN)) {
             return loginByPhoneAndCode(userDTO, request, response);
         }
+        else if (Objects.equals(userDTO.getType(), CommonConstant.USER_PASSWORD_LOGIN)) {
+            return loginByUserAndPassword(userDTO, request, response);
+        }
         return null;
 
     }
 
     @Override
-    public UserDTO update(UserDTO userDTO) {
-        User user = UserBeanUtils.copy(userDTO, User.class);
-        int i = userDAO.updateById(user);
-        return UserBeanUtils.copy(user, UserDTO.class);
+    public void update(UserDTO userDTO) {
+        if (userDTO.getPassword() != null) {
+            String salt = IdUtil.objectId();
+            userDTO.setSalt(salt);
+            String password = MD5Utils.encrypt(userDTO.getPassword() + salt);
+            userDTO.setPassword(password);
+        }
+        int i = userDAO.updateById(userDTO);
     }
 
     @Override
@@ -240,8 +249,38 @@ public class UserServiceImpl implements UserService {
 
     }
 
-    private void loginByUserAndPassword(UserDTO userDTO, HttpServletRequest request, HttpServletResponse response){
+    private UserDTO loginByUserAndPassword(UserDTO userDTO, HttpServletRequest request, HttpServletResponse response){
+        QueryWrapper<User> queryWrapper = new QueryWrapper<>();
+        queryWrapper.eq("user_no", userDTO.getUserNo());
+        queryWrapper.eq("is_delete", CommonConstant.NOT_DEL);
+        User user = userDAO.selectOne(queryWrapper);
+        if (user == null) {
+            throw new BusinessException(ErrorCodeEnum.USER_NO_NOT_EXIST_ERROR.getCode(), ErrorCodeEnum.USER_NO_NOT_EXIST_ERROR.getMessage());
+        } else {
+            String salt = user.getSalt();
+            String password = MD5Utils.encrypt(userDTO.getPassword() + salt);
+            if (!Objects.equals(password, user.getPassword())) {
+                throw new BusinessException(ErrorCodeEnum.PASSWORD_ERROR.getCode(), ErrorCodeEnum.PASSWORD_ERROR.getMessage());
+            } else {
+                user.setCount(user.getCount()+1);
+                user.setLastLoginTime(new Date());
+                user.setUpdateTime(new Date());
+                userDAO.updateById(user);
+                String ticket = UUID.randomUUID().toString();
+                String token = UUID.randomUUID().toString();
+                stringRedisTemplate.opsForValue().set(ticket, token, 20, TimeUnit.MINUTES);
+                stringRedisTemplate.opsForValue().set(token, JSON.toJSONString(userDTO),2,TimeUnit.HOURS);
+                //种植cookie
+                CasProperties casProperties = cookieBaseSessionUtils.getCasProperties();
+                request.setAttribute(cookieBaseSessionUtils.getCasProperties().getCookieName(), token);
+                cookieBaseSessionUtils.onNewSession(request, response);
 
+                UserDTO userDTO1 = toUserDTO(user);
+                userDTO1.setTicket(ticket);
+                userDTO1.setToken(token);
+                return userDTO1;
+            }
+        }
     }
 
     private String getTokenOrTicket(HttpServletRequest request,String key) {
