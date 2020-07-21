@@ -68,5 +68,15 @@ public class UserController {
     }
 
 
+    @ApiOperation("找回密码")
+    @PutMapping("/retrievePassword")
+    public void retrievePassword(@RequestBody UserVO userVO){
+        UserDTO userDTO = UserBeanUtils.copy(userVO, UserDTO.class);
+        userService.retrievePassword(userDTO );
+
+    }
+
+
+
 
 }

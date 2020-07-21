@@ -25,4 +25,6 @@ public interface UserService {
 
     void logout(HttpServletRequest request, HttpServletResponse response);
 
+    void retrievePassword(UserDTO userDTO);
+
 }
