@@ -75,6 +75,14 @@
             <version>5.0.7</version>
         </dependency>
 
+        <!--时序数据库依赖-->
+<!--        <dependency>-->
+<!--            <groupId>org.influxdb</groupId>-->
+<!--            <artifactId>influxdb-java</artifactId>-->
+<!--            <version>2.15</version>-->
+<!--        </dependency>-->
+
+
     </dependencies>
 
 
