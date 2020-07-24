@@ -205,6 +205,22 @@ public class UserServiceImpl implements UserService {
 
     }
 
+    @Override
+    public void retrievePassword(UserDTO userDTO) {
+        Boolean flag = checkVerificationCode(userDTO.getPhone(), userDTO.getCode());
+        if (!flag) {
+            throw new BusinessException(ErrorCodeEnum.VERIFICATION_CODE_ERROR.getCode(), ErrorCodeEnum.VERIFICATION_CODE_ERROR.getMessage());
+        }
+        UserDTO userDTO1 = findUserByPhoneNumber(userDTO.getPhone());
+        if (userDTO1 == null) {
+            throw new BusinessException(ErrorCodeEnum.PHONE_NOT_REGISTER.getCode(), ErrorCodeEnum.PHONE_NOT_REGISTER.getMessage());
+        }
+        UserDTO userDTO2 = new UserDTO();
+        userDTO2.setId(userDTO1.getId());
+        userDTO2.setPassword(userDTO1.getPassword());
+        update(userDTO);
+    }
+
 
     private UserDTO loginByLocal(UserDTO userDTO, HttpServletRequest request, HttpServletResponse response){
         //判断手机号是否登录过
