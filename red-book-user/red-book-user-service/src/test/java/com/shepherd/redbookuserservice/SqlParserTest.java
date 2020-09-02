@@ -5,6 +5,7 @@ import com.alibaba.druid.sql.ast.statement.SQLSelect;
 import com.alibaba.druid.sql.ast.statement.SQLSelectQueryBlock;
 import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
 import com.shepherd.redbookuserservice.exception.BusinessException;
+import com.shepherd.redbookuserservice.utils.SqlParserUtil;
 import lombok.extern.slf4j.Slf4j;
 import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.parser.CCJSqlParserUtil;
@@ -19,6 +20,7 @@ import org.springframework.test.context.junit4.SpringRunner;
 import java.util.List;
 
 import static com.shepherd.redbookuserservice.utils.SqlParserUtil.parser;
+import static com.shepherd.redbookuserservice.utils.SqlParserUtil.parserSql;
 
 /**
  * @author fjZheng
@@ -38,29 +40,30 @@ public class SqlParserTest {
                 "on a.project_id=b.id";
 
         try {
-            Statement stmt = CCJSqlParserUtil.parse(sql);
-            Select select = (Select) stmt;
-            SelectBody selectBody = select.getSelectBody();
-            PlainSelect plainSelect = (PlainSelect) selectBody;
-
-            // first step check sql valid
-            for (SelectItem selectItem : ((PlainSelect) selectBody).getSelectItems()) {
-                if (selectItem instanceof AllColumns || selectItem instanceof AllTableColumns){
-                    throw new BusinessException("不符合sql开发规范");
-                }
-                SelectExpressionItem selectExpressionItem = (SelectExpressionItem) selectItem;
-            }
-            //From分析
-            FromItem fromItem = plainSelect.getFromItem();
-            Table table = (Table) fromItem; // table.getAlias().getName(), table.getName()
-
-            // join分析
-            List<Join> joins = plainSelect.getJoins();
-            for (Join join : joins) {
-                FromItem rightItem = join.getRightItem();
-                Table table1 = (Table) rightItem; // (table.getAlias().getName(), table.getName());
-                int i=0;
-            }
+            SqlParserUtil.parserSql(sql);
+//            Statement stmt = CCJSqlParserUtil.parse(sql);
+//            Select select = (Select) stmt;
+//            SelectBody selectBody = select.getSelectBody();
+//            PlainSelect plainSelect = (PlainSelect) selectBody;
+//
+//            // first step check sql valid
+//            for (SelectItem selectItem : ((PlainSelect) selectBody).getSelectItems()) {
+//                if (selectItem instanceof AllColumns || selectItem instanceof AllTableColumns){
+//                    throw new BusinessException("不符合sql开发规范");
+//                }
+//                SelectExpressionItem selectExpressionItem = (SelectExpressionItem) selectItem;
+//            }
+//            //From分析
+//            FromItem fromItem = plainSelect.getFromItem();
+//            Table table = (Table) fromItem; // table.getAlias().getName(), table.getName()
+//
+//            // join分析
+//            List<Join> joins = plainSelect.getJoins();
+//            for (Join join : joins) {
+//                FromItem rightItem = join.getRightItem();
+//                Table table1 = (Table) rightItem; // (table.getAlias().getName(), table.getName());
+//                int i=0;
+//            }
         } catch (Exception e) {
             log.error("sql parser error:", e);
 
