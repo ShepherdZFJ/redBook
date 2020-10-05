@@ -16,12 +16,12 @@ public class RedBookUserServiceApplication {
     }
 
     @Bean
-    public CasProperties casProperties(){
+    public CasProperties casProperties() {
         return new CasProperties();
     }
 
     @Bean
-    public CookieBaseSessionUtils cookieBasedSession(CasProperties casProperties){
+    public CookieBaseSessionUtils cookieBasedSession(CasProperties casProperties) {
         CookieBaseSessionUtils cookieBasedSession = new CookieBaseSessionUtils();
         cookieBasedSession.setCasProperties(casProperties);
         return cookieBasedSession;

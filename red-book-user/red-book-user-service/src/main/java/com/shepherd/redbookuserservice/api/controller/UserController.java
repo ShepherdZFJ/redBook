@@ -28,7 +28,7 @@ public class UserController {
 
     @GetMapping("/VerificationCode/{phoneNumber}")
     @ApiOperation("获取手机验证码")
-    public void getCode(@PathVariable("phoneNumber") String phoneNumber){
+    public void getCode(@PathVariable("phoneNumber") String phoneNumber) {
         userService.getCode(phoneNumber);
     }
 
@@ -42,7 +42,7 @@ public class UserController {
 
     @PostMapping("/login")
     @ApiOperation("用户登录")
-    public LoginVO login(@RequestBody UserVO userVO, HttpServletRequest request, HttpServletResponse response){
+    public LoginVO login(@RequestBody UserVO userVO, HttpServletRequest request, HttpServletResponse response) {
         UserDTO userDTO = UserBeanUtils.copy(userVO, UserDTO.class);
         UserDTO userDTO1 = userService.login(userDTO, request, response);
         return UserBeanUtils.copy(userDTO1, LoginVO.class);
@@ -63,20 +63,18 @@ public class UserController {
 
     @GetMapping
     @ApiOperation("获取用户列表")
-    public List<UserDTO> getList(){
+    public List<UserDTO> getList() {
         return userService.getList();
     }
 
 
     @ApiOperation("找回密码")
     @PutMapping("/retrievePassword")
-    public void retrievePassword(@RequestBody UserVO userVO){
+    public void retrievePassword(@RequestBody UserVO userVO) {
         UserDTO userDTO = UserBeanUtils.copy(userVO, UserDTO.class);
-        userService.retrievePassword(userDTO );
+        userService.retrievePassword(userDTO);
 
     }
-
-
 
 
 }

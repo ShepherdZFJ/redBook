@@ -5,7 +5,7 @@ package com.shepherd.redbookuserservice.exception;
  * @version 1.0
  * @date 2020/6/24 14:08
  */
-public class BusinessException extends RuntimeException{
+public class BusinessException extends RuntimeException {
 
     private String code;
 

@@ -21,7 +21,7 @@ public class MD5Utils {
     public static String encrypt(String str) {
         try {
             String s = IdUtil.objectId();
-            str = str +s;
+            str = str + s;
             // 获得MD5摘要算法的 MessageDigest 对象
             MessageDigest md = MessageDigest.getInstance("MD5");
             //字符串转字节码

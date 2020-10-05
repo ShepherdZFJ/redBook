@@ -27,8 +27,8 @@ import java.util.Map;
 public class SqlParserUtil {
 
 
-    public static void parserSql(String sql){
-        List< Map<String, Object> > list = new ArrayList<>();
+    public static void parserSql(String sql) {
+        List<Map<String, Object>> list = new ArrayList<>();
         try {
             Statement stmt = CCJSqlParserUtil.parse(sql);
             Select select = (Select) stmt;
@@ -37,7 +37,7 @@ public class SqlParserUtil {
 
             // first step check sql valid
             for (SelectItem selectItem : ((PlainSelect) selectBody).getSelectItems()) {
-                if (selectItem instanceof AllColumns || selectItem instanceof AllTableColumns){
+                if (selectItem instanceof AllColumns || selectItem instanceof AllTableColumns) {
                     throw new BusinessException("不符合sql开发规范");
                 }
                 Map<String, String> map = new HashMap<>();
@@ -50,14 +50,14 @@ public class SqlParserUtil {
                     map.put("table", column.getTable().toString());
                     map.put("columnName", column.getColumnName());
                     if (alias != null) {
-                        map.put("name",alias.getName());
+                        map.put("name", alias.getName());
                     }
                     result.put("column", map);
                 } else {
-                    String s = "="+expression.toString();
-                    map.put("expression",s);
+                    String s = "=" + expression.toString();
+                    map.put("expression", s);
                     if (alias != null) {
-                        map.put("name",alias.getName());
+                        map.put("name", alias.getName());
                     }
                     result.put("expression", map);
                 }
@@ -69,7 +69,7 @@ public class SqlParserUtil {
                 Table table = (Table) fromItem;
                 Alias alias = table.getAlias();
                 String name = table.getName();
-                int i=0;
+                int i = 0;
             }
 
             // join分析
@@ -77,22 +77,20 @@ public class SqlParserUtil {
             for (Join join : joins) {
                 FromItem rightItem = join.getRightItem();
                 Table table1 = (Table) rightItem; // (table.getAlias().getName(), table.getName());
-                int i=0;
+                int i = 0;
             }
         } catch (Exception e) {
             log.error("sql parser error:", e);
         }
     }
 
-    public static SQLStatement parser(String sql,String dbType) throws SQLSyntaxErrorException {
+    public static SQLStatement parser(String sql, String dbType) throws SQLSyntaxErrorException {
         List<SQLStatement> list = SQLUtils.parseStatements(sql, dbType);
         if (list.size() > 1) {
             throw new SQLSyntaxErrorException("MultiQueries is not supported,use single query instead ");
         }
         return list.get(0);
     }
-
-
 
 
 }

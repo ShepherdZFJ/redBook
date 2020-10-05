@@ -93,7 +93,7 @@ public class IdUtils {
     }
 
     public static void main(String[] args) {
-        IdUtils snowFlake = new IdUtils(2,3);
+        IdUtils snowFlake = new IdUtils(2, 3);
 
         long start = System.currentTimeMillis();
         for (int i = 0; i < 1000; i++) {

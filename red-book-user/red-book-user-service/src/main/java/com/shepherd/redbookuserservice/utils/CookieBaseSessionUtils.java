@@ -21,6 +21,7 @@ public class CookieBaseSessionUtils {
     public CasProperties getCasProperties() {
         return casProperties;
     }
+
     public void setCasProperties(CasProperties casProperties) {
         this.casProperties = casProperties;
     }

@@ -5,10 +5,12 @@ package com.shepherd.redbookuserservice.connection;
  * @version 1.0
  * @date 2020/7/21 10:28
  */
+
 import org.influxdb.BatchOptions;
 import org.influxdb.InfluxDB;
 import org.influxdb.InfluxDBFactory;
 import org.influxdb.dto.*;
+
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -22,9 +24,9 @@ public class InfluxDbConnection {
     private InfluxDB influxdb;
     private BatchOptions batchOptions;
 
-    public InfluxDbConnection( String url, String database, String retentionPolicy, String retentionPolicyTime, BatchOptions batchOptions) {
-       // this.userName = userName;
-       // this.password = password;
+    public InfluxDbConnection(String url, String database, String retentionPolicy, String retentionPolicyTime, BatchOptions batchOptions) {
+        // this.userName = userName;
+        // this.password = password;
         this.url = url;
         this.database = database;
         //默认数据保存策略为autogen

@@ -34,5 +34,4 @@ public class LoginVO {
     private String email;
 
 
-
 }

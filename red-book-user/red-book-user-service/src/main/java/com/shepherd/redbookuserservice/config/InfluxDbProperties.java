@@ -10,7 +10,7 @@ import lombok.Data;
 @Data
 public class InfluxDbProperties {
     private String url;
-//    private String userName;
+    //    private String userName;
 //    private String password;
     private String database;
     private String retentionPolicy = "autogen";

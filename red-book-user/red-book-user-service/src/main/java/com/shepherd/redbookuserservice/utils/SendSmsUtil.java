@@ -1,4 +1,5 @@
 package com.shepherd.redbookuserservice.utils;
+
 import com.aliyuncs.CommonRequest;
 import com.aliyuncs.CommonResponse;
 import com.aliyuncs.DefaultAcsClient;
@@ -30,8 +31,8 @@ public class SendSmsUtil {
     @Value("${aliyun-sms.templateCode}")
     private static String templateCode;
 
-    public static void sendSms(String phoneNumber){
-        String code1 =  RandomStringUtils.randomNumeric(6);
+    public static void sendSms(String phoneNumber) {
+        String code1 = RandomStringUtils.randomNumeric(6);
         DefaultProfile profile = DefaultProfile.getProfile("cn-hangzhou", accessKeyId, accessSecret);
         IAcsClient client = new DefaultAcsClient(profile);
 
@@ -45,7 +46,7 @@ public class SendSmsUtil {
         request.putQueryParameter("SignName", signName);
         request.putQueryParameter("TemplateCode", templateCode);
         request.putQueryParameter("PhoneNumbers", phoneNumber);
-        request.putQueryParameter("TemplateParam", "{code:"+ code1 +"}");
+        request.putQueryParameter("TemplateParam", "{code:" + code1 + "}");
         try {
             CommonResponse response = client.getCommonResponse(request);
             System.out.println(response.getData());

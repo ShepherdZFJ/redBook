@@ -70,18 +70,19 @@ public class UserServiceImpl implements UserService {
     private StringRedisTemplate stringRedisTemplate;
 
     @Value("${aliyun-sms.accessKeyId}")
-    private  String accessKeyId;
+    private String accessKeyId;
 
     @Value("${aliyun-sms.accessSecret}")
-    private  String accessSecret;
+    private String accessSecret;
 
     @Value("${aliyun-sms.signName}")
-    private  String signName;
+    private String signName;
 
     @Value("${aliyun-sms.templateCode}")
-    private  String templateCode;
+    private String templateCode;
     @Value("${aliyun-sms.expireTime}")
     private Long expireTime;
+
     @Override
     public String getCode(String phoneNumber) {
         String code = RandomStringUtils.randomNumeric(6);
@@ -98,11 +99,11 @@ public class UserServiceImpl implements UserService {
         request.putQueryParameter("SignName", signName);
         request.putQueryParameter("TemplateCode", templateCode);
         request.putQueryParameter("PhoneNumbers", phoneNumber);
-        request.putQueryParameter("TemplateParam", "{code:"+ code +"}");
+        request.putQueryParameter("TemplateParam", "{code:" + code + "}");
         try {
             CommonResponse response = client.getCommonResponse(request);
-            log.info("send message result: "+response.getData());
-            stringRedisTemplate.opsForValue().set(VERIFICATION+phoneNumber, code, expireTime, TimeUnit.MINUTES);
+            log.info("send message result: " + response.getData());
+            stringRedisTemplate.opsForValue().set(VERIFICATION + phoneNumber, code, expireTime, TimeUnit.MINUTES);
             return code;
 
         } catch (ServerException e) {
@@ -118,11 +119,10 @@ public class UserServiceImpl implements UserService {
     @Transactional(rollbackFor = Exception.class)
     public UserDTO login(UserDTO userDTO, HttpServletRequest request, HttpServletResponse response) {
         if (Objects.equals(userDTO.getType(), CommonConstant.PHONE_LOCAL_LOGIN)) {
-            return loginByLocal(userDTO, request, response );
+            return loginByLocal(userDTO, request, response);
         } else if (Objects.equals(userDTO.getType(), CommonConstant.PHONE_MESSAGE_LOGIN)) {
             return loginByPhoneAndCode(userDTO, request, response);
-        }
-        else if (Objects.equals(userDTO.getType(), CommonConstant.USER_PASSWORD_LOGIN)) {
+        } else if (Objects.equals(userDTO.getType(), CommonConstant.USER_PASSWORD_LOGIN)) {
             return loginByUserAndPassword(userDTO, request, response);
         }
         return null;
@@ -144,7 +144,7 @@ public class UserServiceImpl implements UserService {
     public UserDTO status(HttpServletRequest request, HttpServletResponse response) {
         String ticket = getTokenOrTicket(request, TICKET);
         String token = getTokenOrTicket(request, TOKEN);
-        if ( StringUtils.isBlank(ticket) && StringUtils.isBlank(token)) {
+        if (StringUtils.isBlank(ticket) && StringUtils.isBlank(token)) {
             log.info("ticket和token都为空，未登录的操作");
             response.setStatus(HttpStatus.HTTP_UNAUTHORIZED);
             return null;
@@ -161,7 +161,7 @@ public class UserServiceImpl implements UserService {
             return null;
         }
         UserDTO userDTO = JSONObject.parseObject(userInfo, UserDTO.class);
-        stringRedisTemplate.expire(token , 2, TimeUnit.HOURS);
+        stringRedisTemplate.expire(token, 2, TimeUnit.HOURS);
         return userDTO;
 
 
@@ -222,7 +222,7 @@ public class UserServiceImpl implements UserService {
     }
 
 
-    private UserDTO loginByLocal(UserDTO userDTO, HttpServletRequest request, HttpServletResponse response){
+    private UserDTO loginByLocal(UserDTO userDTO, HttpServletRequest request, HttpServletResponse response) {
         //判断手机号是否登录过
         UserDTO userDTO1 = findUserByPhoneNumber(userDTO.getPhone());
         if (userDTO1 == null) {
@@ -233,7 +233,7 @@ public class UserServiceImpl implements UserService {
             userDTO.setFirstLogin(CommonConstant.FIRST_LOGIN);
 
         } else {
-            userDTO1.setCount(userDTO1.getCount()+1);
+            userDTO1.setCount(userDTO1.getCount() + 1);
             userDTO1.setLastLoginTime(new Date());
             userDTO1.setUpdateTime(new Date());
             userDAO.updateById(userDTO1);
@@ -243,7 +243,7 @@ public class UserServiceImpl implements UserService {
         String ticket = UUID.randomUUID().toString();
         String token = UUID.randomUUID().toString();
         stringRedisTemplate.opsForValue().set(ticket, token, 20, TimeUnit.MINUTES);
-        stringRedisTemplate.opsForValue().set(token, JSON.toJSONString(userDTO),2,TimeUnit.HOURS);
+        stringRedisTemplate.opsForValue().set(token, JSON.toJSONString(userDTO), 2, TimeUnit.HOURS);
         //种植cookie
         CasProperties casProperties = cookieBaseSessionUtils.getCasProperties();
         request.setAttribute(cookieBaseSessionUtils.getCasProperties().getCookieName(), token);
@@ -254,18 +254,18 @@ public class UserServiceImpl implements UserService {
 
     }
 
-    private UserDTO loginByPhoneAndCode(UserDTO userDTO, HttpServletRequest request, HttpServletResponse response){
+    private UserDTO loginByPhoneAndCode(UserDTO userDTO, HttpServletRequest request, HttpServletResponse response) {
         Boolean flag = checkVerificationCode(userDTO.getPhone(), userDTO.getCode());
         if (flag) {
             UserDTO userDTO1 = loginByLocal(userDTO, request, response);
             return userDTO1;
-        }else {
+        } else {
             throw new BusinessException(ErrorCodeEnum.VERIFICATION_CODE_ERROR.getCode(), ErrorCodeEnum.VERIFICATION_CODE_ERROR.getMessage());
         }
 
     }
 
-    private UserDTO loginByUserAndPassword(UserDTO userDTO, HttpServletRequest request, HttpServletResponse response){
+    private UserDTO loginByUserAndPassword(UserDTO userDTO, HttpServletRequest request, HttpServletResponse response) {
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("user_no", userDTO.getUserNo());
         queryWrapper.eq("is_delete", CommonConstant.NOT_DEL);
@@ -278,14 +278,14 @@ public class UserServiceImpl implements UserService {
             if (!Objects.equals(password, user.getPassword())) {
                 throw new BusinessException(ErrorCodeEnum.PASSWORD_ERROR.getCode(), ErrorCodeEnum.PASSWORD_ERROR.getMessage());
             } else {
-                user.setCount(user.getCount()+1);
+                user.setCount(user.getCount() + 1);
                 user.setLastLoginTime(new Date());
                 user.setUpdateTime(new Date());
                 userDAO.updateById(user);
                 String ticket = UUID.randomUUID().toString();
                 String token = UUID.randomUUID().toString();
                 stringRedisTemplate.opsForValue().set(ticket, token, 20, TimeUnit.MINUTES);
-                stringRedisTemplate.opsForValue().set(token, JSON.toJSONString(userDTO),2,TimeUnit.HOURS);
+                stringRedisTemplate.opsForValue().set(token, JSON.toJSONString(userDTO), 2, TimeUnit.HOURS);
                 //种植cookie
                 CasProperties casProperties = cookieBaseSessionUtils.getCasProperties();
                 request.setAttribute(cookieBaseSessionUtils.getCasProperties().getCookieName(), token);
@@ -299,10 +299,10 @@ public class UserServiceImpl implements UserService {
         }
     }
 
-    private String getTokenOrTicket(HttpServletRequest request,String key) {
+    private String getTokenOrTicket(HttpServletRequest request, String key) {
         String token = request.getHeader(key);
         if (StringUtils.isBlank(token)) {
-            token =  request.getParameter(key);
+            token = request.getParameter(key);
         }
         if (StringUtils.isBlank(token)) {
             token = request.getHeader(cookieBaseSessionUtils.getCasProperties().getCookieName());
@@ -327,7 +327,7 @@ public class UserServiceImpl implements UserService {
     }
 
 
-    public UserDTO findUserByPhoneNumber(String phoneNumber){
+    public UserDTO findUserByPhoneNumber(String phoneNumber) {
         QueryWrapper<User> queryWrapper = new QueryWrapper<>();
         queryWrapper.eq("is_delete", CommonConstant.NOT_DEL);
         queryWrapper.eq("phone", phoneNumber);
@@ -352,7 +352,7 @@ public class UserServiceImpl implements UserService {
         return userDTO;
     }
 
-    private Boolean checkVerificationCode(String phoneNumber, String code){
+    private Boolean checkVerificationCode(String phoneNumber, String code) {
         Boolean flag = false;
         String value = stringRedisTemplate.opsForValue().get(VERIFICATION + phoneNumber);
         if (Objects.equals(code, value)) {
